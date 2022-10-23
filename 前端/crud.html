@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title></title>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <style>
+        table {
+            border: 1px solid grey;
+        }
+        .tdcls {
+            border: 1px solid grey;
+        }
+        .inptcls{
+            border-width: 0px;
+        }
+        #show2 {
+            visibility: hidden;
+            position: relative;
+            z-index: 1;
+        }
+        #show {
+            position: absolute;
+            top: 0px;
+            left: 0px;
+            z-index: 2;
+            padding-left: 10px;
+            padding-top: 5px;
+        }
+        #upd {
+            visibility: hidden;
+            position: absolute;
+            left: 0;
+            bottom: 0;
+            z-index: 1;
+        }
+        body {
+            padding-left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id='show2'>
+        type: <input type="text" class='add'><br/>
+        name: <input type="text" class='add'><br/>
+        description: <input type="text" class='add'><br/>
+        <input type="text" style="visibility:hidden" class='add'><br/>
+        <span style="width:60px;display:inline-block">
+        <button onclick=add()>add</button>
+        <button id='upd'>update</button>
+        </span>
+        <button onclick=cancel()>cancel</button>
+    </div>
+    <div id='show'>
+        <div style="height:30px">
+    id:<input type="text" id='result'>
+        <button onclick=select()>select</button>
+        <button id='add'>add</button>
+        <button onclick=multidel()>delete</button>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <td></td>
+                    <td class='tdcls'>id</td>
+                    <td class='tdcls'>type</td>
+                    <td class='tdcls'>name</td>
+                    <td class='tdcls'>description</td>
+                    <td></td>
+                    <td></td>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <template id='temp'>
+        <tr>
+            <td class='tdcls'>
+                <input type="checkbox" name='del'>
+            </td>
+            <td class='tdcls'></td>
+            <td class='tdcls'></td>
+            <td class='tdcls'></td>
+            <td class='tdcls'></td>
+            <td class='tdcls'>
+                <button onclick=updevt(this)>update</button>
+            </td>
+            <td class='tdcls'>
+                <button id='del' onclick=delevt(this)>delete</button>
+            </td>
+        </tr>
+    </template>
+
+    <script>
+        const result = document.getElementById('result');
+        const btns = document.querySelectorAll('button');
+        let temp = document.getElementById('temp');
+        let tb = document.querySelector('tbody');
+        td = temp.content.querySelectorAll('td');
+        axios.defaults.baseURL='http://localhost:8080/book';
+        //selectAll
+        window.onload=()=>{
+        document.querySelector('tbody').textContent='';
+         axios({
+         }).then(res=>{
+             if(res.data.code === 20011){
+                 res.data.data.forEach(data => {
+                    td[1].textContent=data.id;
+                    td[2].textContent=data.type;
+                    td[3].textContent=data.name;
+                    td[4].textContent=data.description;
+                    let clone = document.importNode(temp.content, true);
+                    tb.appendChild(clone);
+                 })
+             }else {
+                 console.log('no datas');
+             }
+         })
+        }
+        //selectById
+        function select(){
+            let idstr = '';
+            document.querySelector('tbody').textContent='';
+            if(result.value !== ''){idstr='/'+result.value}
+            axios({
+                url: idstr,
+            }).then(res=>{
+                if(res.data.code === 20011){
+                    if(idstr !== ''){
+                      td[1].textContent=res.data.data.id;
+                      td[2].textContent=res.data.data.type;
+                      td[3].textContent=res.data.data.name;
+                      td[4].textContent=res.data.data.description;
+                      let clone = document.importNode(temp.content, true);
+                      tb.appendChild(clone);
+                    } else {
+
+                         res.data.data.forEach(data => {
+                            td[1].textContent=data.id;
+                            td[2].textContent=data.type;
+                            td[3].textContent=data.name;
+                            td[4].textContent=data.description;
+                            let clone = document.importNode(temp.content, true);
+                            tb.appendChild(clone);
+                         })
+                    }
+                } else {
+                    console.log('no data')
+                }
+            })
+        }
+
+        //delete
+        function delevt(self){
+            let thistb = self.parentElement.parentElement.childNodes[3]
+            let id = '/'+thistb.textContent
+            axios({
+                method: 'delete',
+                url: id
+            }).then(res => {
+                if(res.data.code !== 20041){
+                    console.log("delete failed")
+                } else {
+                    tb.deleteRow(self.parentElement.parentElement.rowIndex-1)
+                }
+            })
+        }
+        
+        //addBook
+        document.getElementById('add').onclick=()=>{
+            document.getElementById('show').style.visibility='hidden';
+            document.getElementById('show2').style.visibility='visible';
+            btns[0].style.visibility = 'visible';
+            document.getElementById('upd').style.visibility = 'hidden';
+            let adds = document.getElementsByClassName('add');
+            for (var i in adds){
+                adds[i].value = '';
+            }
+        }
+        function add(){
+            let book=JSON.stringify({
+                    type: document.getElementsByClassName('add')[0].value,
+                    name: document.getElementsByClassName('add')[1].value,
+                    description: document.getElementsByClassName('add')[2].value
+                });
+            axios({
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                method: 'post',
+                data: book
+            }).then(res=>{
+                if(res.data.code === 20021) {
+                    result.value = res.data.data;
+                    select();
+                    idstr = '';
+                    cancel();
+                } else {
+                    console.log('add failed')
+                }
+            })
+        }
+        function cancel(){
+            document.getElementById('show2').style.visibility='hidden';
+            document.getElementById('show').style.visibility='visible';
+            btns[0].style.visibility = 'hidden';
+            document.getElementById('upd').style.visibility = 'hidden';
+        }
+
+        //multi delete
+        function multidel(){
+            let arr = document.getElementsByName('del');
+            let delarr = [];
+            for(var i in arr){
+                if(arr[i].checked){
+                    delarr.push(arr[i].parentElement.parentElement.childNodes[3].textContent);
+                }
+            }
+            axios({
+                method: 'delete',
+                data: delarr
+            }).then(res => {
+                if(res.data.code !== 20041){
+                    console.log('delete failed')
+                } else {
+                    for(var i in arr){
+                        if(arr[i].checked){
+                            tb.deleteRow(arr[i].parentElement.parentElement.rowIndex-1)
+                        }
+                    }
+                }
+            })
+        }
+
+        //update
+        function updevt(self){
+            document.getElementById('show').style.visibility='hidden';
+            document.getElementById('show2').style.visibility='visible';
+            btns[0].style.visibility = 'hidden';
+            document.getElementById('upd').style.visibility = 'visible';
+            let type = self.parentElement.parentElement.childNodes[5];
+            let name = self.parentElement.parentElement.childNodes[7];
+            let description = self.parentElement.parentElement.childNodes[9];
+            let id = self.parentElement.parentElement.childNodes[3];
+            let vals = [type,name,description,id];
+            let adds = document.getElementsByClassName('add');
+            for (var i = 0; i<adds.length; i++){
+                adds[i].value = vals[i].textContent;
+            }
+        }
+        document.getElementById('upd').onclick = () => {
+            axios({
+                method: 'put',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                data: JSON.stringify({
+                    id: document.getElementsByClassName('add')[3].value,
+                    type: document.getElementsByClassName('add')[0].value,
+                    name: document.getElementsByClassName('add')[1].value,
+                    description: document.getElementsByClassName('add')[2].value
+                })
+            }).then(res => {
+                if(res.data.code !== 20031) {
+                    console.log('update failed')
+                } else {
+                    cancel();
+                    setTimeout(function() {select()}, 50)
+                }
+            })
+        }
+    </script>
+</body>
+</html>
