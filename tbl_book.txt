@@ -1,0 +1,7 @@
+CREATE TABLE `tbl_book` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `type` varchar(20) DEFAULT NULL,
+  `name` varchar(50) DEFAULT NULL,
+  `description` varchar(255) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=24 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
